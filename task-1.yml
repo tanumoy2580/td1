@@ -1,0 +1,48 @@
+- hosts: all
+  vars_prompt:
+          name: prt
+          private: no
+          prompt: "Enter HTTPD Port No.  "
+  tasks:
+          - name: installing apache httpd
+            package:
+                    name: httpd
+          
+          - name: creating folder
+            file:
+                    state: directory
+                    dest: "/var/www/td"
+
+          - name: setting SElinux to permissive mode
+            selinux:
+                    state: permissive
+                    policy: targeted
+         
+          - name : setting up custom firewall rule
+            firewalld:
+                    state: enabled
+                    permanent: yes
+                    immediate: yes
+                    port: "{{ prt }}/tcp"
+
+          - name: copying config file for web serever
+            template:
+                    src: "td.conf"
+                    dest: "/etc/httpd/conf.d/td.conf"
+            notify: restart httpd
+          
+          - name: copying html web-page
+            copy:
+                    content: "Hello! this is a web page"
+                    dest: "/var/www/td/a.html"
+          
+          - name: start httpd
+            service:
+                    name: httpd
+                    state: started
+
+  handlers:
+          - name: restart httpd
+            service:
+                    name: httpd
+                    state: restarted
