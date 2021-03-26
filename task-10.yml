@@ -1,0 +1,53 @@
+- hosts: localhost
+  vars_prompt:
+          - name: cname
+            prompt: Enter the container name 
+            private: no
+
+          - name: prt
+            prompt: Enter the port in which the container will be exposed 
+            private: no
+  tasks:
+          - name: adding yum repo for docker
+            yum_repository:
+                    name: docker-repo
+                    description: "docker repository"
+                    baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+                    enabled: yes
+                    gpgcheck: no
+
+          - name: installing docker
+            command: "dnf install docker-ce --nobest"
+
+          - name: starting docker service
+            service:
+                    name: "docker"
+                    state: started
+
+          - name: installing python library for docker remote API
+            pip:
+                    name: docker-py
+
+          - name: pulling httpd image
+            docker_image:
+                    name: httpd
+                    source: pull
+
+          - name: creating a folder for document root of httpd container
+            file:
+                    state: directory
+                    path: /var/www/html/
+
+          - name: copying webpage in the directory
+            copy:
+                    src: /root/automate/a1.html
+                    dest: /var/www/html/a1.html
+
+          - name: launching docker container
+            docker_container:
+                  name: "{{ cname }}"
+                  image: httpd
+                  volumes:
+                          - /var/www/html:/usr/local/apache2/htdocs/
+                  ports:
+                          - "{{ prt }}:80"
